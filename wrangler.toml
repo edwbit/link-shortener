@@ -1,0 +1,7 @@
+name = "link-shortener"
+main = "_worker.js"
+compatibility_date = "2026-01-01"
+
+[[kv_namespaces]]
+binding = "SHORT_LINKS"
+id = "3772a883d68848af971d37b3d66ded22"
