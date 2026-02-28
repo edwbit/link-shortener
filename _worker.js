@@ -8,7 +8,12 @@ export default {
     if (path === "/admin") {
       const { keys } = await env.SHORT_LINKS.list();
       return new Response(renderAdminHTML(domain, keys), {
-        headers: { "Content-Type": "text/html" }
+        headers: { 
+          "Content-Type": "text/html",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        }
       });
     }
 
