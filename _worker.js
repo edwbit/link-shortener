@@ -28,7 +28,9 @@ export default {
       const data = await request.formData();
       const key = data.get("key");
       await env.SHORT_LINKS.delete(key);
-      return Response.redirect(`https://${domain}/admin?deleted=true`, 303);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { "Content-Type": "application/json" }
+      });
     }
 
     // Route 4: Public Redirector
@@ -112,12 +114,9 @@ function renderAdminHTML(domain, keys) {
                     </div>
                   </td>
                   <td class="px-6 py-4 text-right">
-                    <form action="/api/delete" method="POST" onsubmit="return confirm('Delete this link?')">
-                      <input type="hidden" name="key" value="${k.name}">
-                      <button type="submit" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
-                        <i data-lucide="trash-2" class="w-5 h-5"></i>
-                      </button>
-                    </form>
+                    <button onclick="deleteLink('${k.name}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
+                      <i data-lucide="trash-2" class="w-5 h-5"></i>
+                    </button>
                   </td>
                 </tr>`).join('')}
             </tbody>
@@ -131,6 +130,13 @@ function renderAdminHTML(domain, keys) {
       function copyLink(text) {
         navigator.clipboard.writeText('https://' + text);
         alert('Copied: ' + text);
+      }
+      async function deleteLink(key) {
+        if (!confirm('Delete this link?')) return;
+        const formData = new FormData();
+        formData.append('key', key);
+        await fetch('/api/delete', { method: 'POST', body: formData });
+        location.reload();
       }
     </script>
   </body></html>`;
