@@ -509,7 +509,14 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
         });
         
         if (response.ok) {
+          // KV has delays, so refresh immediately and again after 3 seconds
           location.reload();
+          // Optional: Refresh again if KV is still syncing
+          setTimeout(() => {
+            if (document.querySelector('[data-click-slug="' + key + '"]')) {
+              location.reload();
+            }
+          }, 3000);
         } else {
           alert('Error deleting link');
         }
@@ -625,9 +632,14 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
             if (response.ok) {
               const data = await response.json();
               updateClickCount(slug, data.clicks);
+            } else if (response.status === 404) {
+              // Link was deleted, stop polling for this slug
+              console.log('Link no longer exists:', slug);
+              continue;
             }
           } catch (error) {
             // Silent fail, don't annoy user
+            console.log('Polling error for slug:', slug);
           }
         }
       }, 5000); // Poll every 5 seconds
