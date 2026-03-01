@@ -509,14 +509,9 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
         });
         
         if (response.ok) {
-          // KV has delays, so refresh immediately and again after 3 seconds
-          location.reload();
-          // Optional: Refresh again if KV is still syncing
-          setTimeout(() => {
-            if (document.querySelector('[data-click-slug="' + key + '"]')) {
-              location.reload();
-            }
-          }, 3000);
+          // KV has delays, so force a complete page reload
+          console.log('Link deleted, reloading page...');
+          window.location.reload();
         } else {
           alert('Error deleting link');
         }
@@ -624,8 +619,15 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
     function startClickPolling() {
       const currentSlugs = ${JSON.stringify(links.map(l => l.name))};
       
+      // Filter out invalid slugs
+      const validSlugs = currentSlugs.filter(slug => 
+        slug && typeof slug === 'string' && slug.length > 0 && !slug.includes(' ') && !slug.includes('/')
+      );
+      
+      console.log('Valid slugs for polling:', validSlugs);
+      
       setInterval(async () => {
-        for (const slug of currentSlugs) {
+        for (const slug of validSlugs) {
           try {
             const encodedSlug = encodeURIComponent(slug);
             const response = await fetch('/api/get-clicks/' + encodedSlug);
@@ -639,7 +641,7 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
             }
           } catch (error) {
             // Silent fail, don't annoy user
-            console.log('Polling error for slug:', slug);
+            console.log('Polling error for slug:', slug, error.message);
           }
         }
       }, 5000); // Poll every 5 seconds
