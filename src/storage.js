@@ -34,6 +34,16 @@ export function createStorage(env) {
         return keysWithUrls;
       }
       return Array.from(localLinks.entries()).map(([name, url]) => ({ name, url }));
+    },
+    
+    async search(query) {
+      const allLinks = await this.listKeys();
+      if (!query) return allLinks;
+      const q = query.toLowerCase();
+      return allLinks.filter(link => 
+        link.name.toLowerCase().includes(q) || 
+        link.url.toLowerCase().includes(q)
+      );
     }
   };
 }

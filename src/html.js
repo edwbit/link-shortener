@@ -1,6 +1,6 @@
 // HTML templates for the link shortener
 
-export function renderAdminHTML(domain, links, protocol) {
+export function renderAdminHTML(domain, links, protocol, searchQuery = "") {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -50,9 +50,14 @@ export function renderAdminHTML(domain, links, protocol) {
       </section>
 
       <div class="mb-4">
-        <input type="text" id="searchInput" placeholder="Search links..." 
-          class="border border-slate-300 rounded-lg px-4 py-2 w-full md:w-64 focus:ring-2 focus:ring-blue-500 outline-none"
-          onkeyup="filterLinks()">
+        <form action="/admin" method="GET" class="flex gap-2">
+          <input type="text" name="q" placeholder="Search links..." value="${searchQuery}"
+            class="border border-slate-300 rounded-lg px-4 py-2 w-full md:w-64 focus:ring-2 focus:ring-blue-500 outline-none">
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+            Search
+          </button>
+          ${searchQuery ? '<button type="button" onclick="window.location=\'/admin\'" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg">Clear</button>' : ''}
+        </form>
       </div>
 
       <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -82,7 +87,7 @@ export function renderAdminHTML(domain, links, protocol) {
                   <a href="${k.url}" target="_blank" class="text-blue-500 hover:underline">${k.url}</a>
                 </td>
                 <td class="px-6 py-4 text-right">
-                  <button onclick="editLink('${k.name}', '${k.url}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors mr-2">
+                  <button onclick="openEditModal('${k.name}', '${k.url}')" class="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors mr-2">
                     <i data-lucide="pencil" class="w-5 h-5"></i>
                   </button>
                   <button onclick="deleteLink('${k.name}')" class="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
@@ -120,14 +125,84 @@ export function renderAdminHTML(domain, links, protocol) {
       location.reload();
     }
     async function editLink(key, currentUrl) {
+      const newSlug = prompt('Edit short URL (slug):', key);
+      if (!newSlug || newSlug === key) {
+        const newUrl = prompt('Edit destination URL:', currentUrl);
+        if (!newUrl || newUrl === currentUrl) return;
+        const formData = new FormData();
+        formData.append('key', key);
+        formData.append('url', newUrl);
+        await fetch('/api/update', { method: 'POST', body: formData });
+        location.reload();
+        return;
+      }
+      if (!confirm('Changing the slug will create a new link. Continue?')) return;
       const newUrl = prompt('Edit destination URL:', currentUrl);
-      if (!newUrl || newUrl === currentUrl) return;
+      if (!newUrl) return;
       const formData = new FormData();
-      formData.append('key', key);
+      formData.append('oldKey', key);
+      formData.append('newKey', newSlug);
       formData.append('url', newUrl);
       await fetch('/api/update', { method: 'POST', body: formData });
       location.reload();
     }
+  </script>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+      <h3 class="text-lg font-semibold mb-4">Edit Link</h3>
+      <form id="editForm">
+        <input type="hidden" id="editOldKey">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Short URL (slug)</label>
+          <input type="text" id="editNewKey" required 
+            class="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-1">Destination URL</label>
+          <input type="url" id="editUrl" required 
+            class="w-full border border-slate-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div class="flex gap-2 justify-end">
+          <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-slate-600 hover:text-slate-800">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openEditModal(key, url) {
+      document.getElementById('editOldKey').value = key;
+      document.getElementById('editNewKey').value = key;
+      document.getElementById('editUrl').value = url;
+      document.getElementById('editModal').classList.remove('hidden');
+      document.getElementById('editModal').classList.add('flex');
+    }
+    function closeEditModal() {
+      document.getElementById('editModal').classList.add('hidden');
+      document.getElementById('editModal').classList.remove('flex');
+    }
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const oldKey = document.getElementById('editOldKey').value;
+      const newKey = document.getElementById('editNewKey').value;
+      const url = document.getElementById('editUrl').value;
+      
+      const formData = new FormData();
+      if (oldKey !== newKey) {
+        formData.append('oldKey', oldKey);
+        formData.append('newKey', newKey);
+      } else {
+        formData.append('key', oldKey);
+      }
+      formData.append('url', url);
+      
+      await fetch('/api/update', { method: 'POST', body: formData });
+      closeEditModal();
+      location.reload();
+    });
   </script>
 </body></html>`;
 }

@@ -22,8 +22,9 @@ export default {
 
     // Route 1: The Dashboard (Admin)
     if (path === "/admin") {
-      const links = await storage.listKeys();
-      return new Response(renderAdminHTML(currentDomain, links, protocol), {
+      const searchQuery = url.searchParams.get("q") || "";
+      const links = await storage.search(searchQuery);
+      return new Response(renderAdminHTML(currentDomain, links, protocol, searchQuery), {
         headers: { 
           "Content-Type": "text/html",
           "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -47,11 +48,23 @@ export default {
     // Route 3: API - Update
     if (path === "/api/update" && request.method === "POST") {
       const data = await request.formData();
-      const key = data.get("key");
-      const newUrl = data.get("url").trim();
-      if (!key || !newUrl) return new Response("Missing fields", { status: 400 });
+      const oldKey = data.get("oldKey");
+      const newKey = data.get("newKey");
+      const url = data.get("url").trim();
       
-      await storage.saveLink(key, newUrl);
+      if (!url) return new Response("Missing fields", { status: 400 });
+      
+      // If renaming (oldKey != newKey), delete old and create new
+      if (oldKey && newKey && oldKey !== newKey) {
+        await storage.deleteLink(oldKey);
+        await storage.saveLink(newKey, url);
+      } else {
+        // Just update URL
+        const key = data.get("key");
+        if (!key) return new Response("Missing key", { status: 400 });
+        await storage.saveLink(key, url);
+      }
+      
       return new Response(JSON.stringify({ success: true }), {
         headers: { "Content-Type": "application/json" }
       });
