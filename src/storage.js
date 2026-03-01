@@ -63,26 +63,30 @@ export function createStorage(env) {
     
     async saveLink(key, value) {
       const data = typeof value === 'string' ? { url: value, clicks: 0 } : value;
+      // Add creation timestamp if not already present
+      if (!data.created) {
+        data.created = Date.now();
+      }
       const json = JSON.stringify(data);
       if (hasKV) return env.SHORT_LINKS.put(key, json);
       localLinks.set(key, json);
     },
     
-     async incrementClicks(key) {
-       if (hasKV) {
-         const data = await env.SHORT_LINKS.get(key);
-         if (!data) return;
-         const parsed = parseLinkData(data);
-         parsed.clicks = (parsed.clicks || 0) + 1;
-         await env.SHORT_LINKS.put(key, JSON.stringify(parsed));
-       } else {
-         const data = localLinks.get(key);
-         if (!data) return;
-         const parsed = parseLinkData(data);
-         parsed.clicks = (parsed.clicks || 0) + 1;
-         localLinks.set(key, JSON.stringify(parsed));
-       }
-     },
+    async incrementClicks(key) {
+      if (hasKV) {
+        const data = await env.SHORT_LINKS.get(key);
+        if (!data) return;
+        const parsed = parseLinkData(data);
+        parsed.clicks = (parsed.clicks || 0) + 1;
+        await env.SHORT_LINKS.put(key, JSON.stringify(parsed));
+      } else {
+        const data = localLinks.get(key);
+        if (!data) return;
+        const parsed = parseLinkData(data);
+        parsed.clicks = (parsed.clicks || 0) + 1;
+        localLinks.set(key, JSON.stringify(parsed));
+      }
+    },
     
     async deleteLink(key) {
       if (hasKV) return env.SHORT_LINKS.delete(key);
@@ -99,10 +103,14 @@ export function createStorage(env) {
             return {
               name: k.name,
               url: parsed.url,
-              clicks: parsed.clicks
+              clicks: parsed.clicks,
+              created: parsed.created || Date.now() // Fallback for existing links
             };
           })
         );
+        
+        // Sort by creation time (newest first) for better UX
+        keysWithUrls.sort((a, b) => (b.created || 0) - (a.created || 0));
         return {
           links: keysWithUrls,
           cursor: result.list_complete ? null : result.cursor,
@@ -112,10 +120,10 @@ export function createStorage(env) {
       // Local storage: maintain consistent cursor handling
       const allLinks = Array.from(localLinks.entries()).map(([name, data]) => {
         const parsed = parseLinkData(data);
-        return { name, url: parsed.url, clicks: parsed.clicks };
+        return { name, url: parsed.url, clicks: parsed.clicks, created: parsed.created || Date.now() };
       });
-      // Sort by name for consistent ordering
-      allLinks.sort((a, b) => a.name.localeCompare(b.name));
+      // Sort by creation time (newest first) for better UX
+      allLinks.sort((a, b) => (b.created || 0) - (a.created || 0));
       
       const start = cursor ? parseInt(cursor) : 0;
       const pageLinks = allLinks.slice(start, start + limit);
