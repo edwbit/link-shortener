@@ -57,7 +57,7 @@ export default {
         return new Response(`
           <script>
             alert('Error: Invalid URL format. Please enter a valid URL including http:// or https://');
-            window.location.href = '${protocol}://${currentDomain}/admin';
+            window.location.href = 'https://${currentDomain}/admin';
           </script>
         `, { 
           headers: { "Content-Type": "text/html" }
@@ -133,7 +133,7 @@ export default {
           return new Response(`
             <script>
               alert('Error: Short URL "${newKey}" already exists! Please choose a different name.');
-              window.location.href = '${protocol}://${currentDomain}/admin';
+              window.location.href = 'https://${currentDomain}/admin';
             </script>
           `, { 
             headers: { "Content-Type": "text/html" }
@@ -206,7 +206,7 @@ export default {
       
       if (key && url) {
         await storage.saveLink(key, { url: url, clicks: 0 });
-        return Response.redirect(`${protocol}://${currentDomain}/admin?success=true`, 303);
+        return Response.redirect(`https://${currentDomain}/admin?success=true`, 303);
       }
     }
 
