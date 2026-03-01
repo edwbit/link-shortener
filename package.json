@@ -1,0 +1,13 @@
+{
+  "name": "link-shortener",
+  "version": "1.0.0",
+  "description": "Link shortener with Cloudflare Workers",
+  "main": "_worker.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

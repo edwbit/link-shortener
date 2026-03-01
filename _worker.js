@@ -23,8 +23,17 @@ export default {
     // Route 1: The Dashboard (Admin)
     if (path === "/admin") {
       const searchQuery = url.searchParams.get("q") || "";
-      const links = await storage.search(searchQuery);
-      return new Response(renderAdminHTML(currentDomain, links, protocol, searchQuery), {
+      const cursor = url.searchParams.get("cursor");
+      
+      // Use search if query exists, otherwise use paginated list
+      let result;
+      if (searchQuery) {
+        result = await storage.search(searchQuery, 10, cursor);
+      } else {
+        result = await storage.listKeys(10, cursor);
+      }
+      
+      return new Response(renderAdminHTML(currentDomain, result.links, protocol, searchQuery, cursor, result.total, result.cursor), {
         headers: { 
           "Content-Type": "text/html",
           "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -41,7 +50,65 @@ export default {
       const target = data.get("url").trim();
       if (!key || !target) return new Response("Missing fields", { status: 400 });
       
-      await storage.saveLink(key, target);
+      // Validate URL format
+      try {
+        new URL(target);
+      } catch {
+        return new Response(`
+          <script>
+            alert('Error: Invalid URL format. Please enter a valid URL including http:// or https://');
+            window.location.href = '${protocol}://${currentDomain}/admin';
+          </script>
+        `, { 
+          headers: { "Content-Type": "text/html" }
+        });
+      }
+      
+      // Optional: Check if URL exists (HEAD request)
+      try {
+        const urlCheck = await fetch(target, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+        if (!urlCheck.ok) {
+          return new Response(`
+            <script>
+              if (confirm('Warning: This URL appears to be broken or unreachable. Save anyway?')) {
+                window.location.href = '${protocol}://${currentDomain}/admin?save=' + encodeURIComponent('${key}') + '&url=' + encodeURIComponent('${target}');
+              } else {
+                window.location.href = '${protocol}://${currentDomain}/admin';
+              }
+            </script>
+          `, { 
+            headers: { "Content-Type": "text/html" }
+          });
+        }
+      } catch (error) {
+        // URL check failed, but allow save with warning
+        return new Response(`
+          <script>
+            if (confirm('Could not verify this URL. Save anyway?')) {
+              window.location.href = '${protocol}://${currentDomain}/admin?save=' + encodeURIComponent('${key}') + '&url=' + encodeURIComponent('${target}');
+            } else {
+              window.location.href = '${protocol}://${currentDomain}/admin';
+            }
+          </script>
+        `, { 
+          headers: { "Content-Type": "text/html" }
+        });
+      }
+      
+      // Server-side duplicate validation (comprehensive check)
+      const existingLink = await storage.getLink(key);
+      if (existingLink) {
+        return new Response(`
+          <script>
+            alert('Error: Short URL "${key}" already exists! Please choose a different name.');
+            window.location.href = '${protocol}://${currentDomain}/admin';
+          </script>
+        `, { 
+          headers: { "Content-Type": "text/html" }
+        });
+      }
+      
+      await storage.saveLink(key, { url: target, clicks: 0 });
       return Response.redirect(`${protocol}://${currentDomain}/admin?success=true`, 303);
     }
 
@@ -54,15 +121,29 @@ export default {
       
       if (!url) return new Response("Missing fields", { status: 400 });
       
-      // If renaming (oldKey != newKey), delete old and create new
+      // If renaming (oldKey != newKey), check if new key already exists
       if (oldKey && newKey && oldKey !== newKey) {
+        const existingLink = await storage.getLink(newKey);
+        if (existingLink) {
+          return new Response(`
+            <script>
+              alert('Error: Short URL "${newKey}" already exists! Please choose a different name.');
+              window.location.href = '${protocol}://${currentDomain}/admin';
+            </script>
+          `, { 
+            headers: { "Content-Type": "text/html" }
+          });
+        }
+        
         await storage.deleteLink(oldKey);
-        await storage.saveLink(newKey, url);
+        await storage.saveLink(newKey, { url: url, clicks: 0 });
       } else {
-        // Just update URL
+        // Just update URL, preserve existing clicks
         const key = data.get("key");
         if (!key) return new Response("Missing key", { status: 400 });
-        await storage.saveLink(key, url);
+        const existing = await storage.getLink(key);
+        const currentClicks = existing ? existing.clicks || 0 : 0;
+        await storage.saveLink(key, { url: url, clicks: currentClicks });
       }
       
       return new Response(JSON.stringify({ success: true }), {
@@ -84,7 +165,44 @@ export default {
     const slug = decodeURIComponent(path.split("/")[1]);
     if (slug && slug !== "admin" && slug !== "favicon.ico") {
       const destination = await storage.getLink(slug);
-      if (destination) return Response.redirect(destination, 302);
+      if (destination) {
+        // Handle both object and string formats
+        let url;
+        if (typeof destination === 'object' && destination.url) {
+          url = destination.url;
+        } else {
+          url = destination;
+        }
+        await storage.incrementClicks(slug);
+        return Response.redirect(url, 302);
+      }
+    }
+
+    // Route 6: API - Get Clicks
+    if (path.startsWith("/api/get-clicks/") && request.method === "GET") {
+      const slug = decodeURIComponent(path.split("/")[3]);
+      if (!slug) return new Response("Missing slug", { status: 400 });
+      
+      const link = await storage.getLink(slug);
+      if (!link) return new Response("Link not found", { status: 404 });
+      
+      return new Response(JSON.stringify({ 
+        slug: slug,
+        clicks: link.clicks || 0 
+      }), {
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+
+    // Handle forced save from URL validation
+    if (path === "/admin" && url.searchParams.has("save")) {
+      const key = url.searchParams.get("save");
+      const url = url.searchParams.get("url");
+      
+      if (key && url) {
+        await storage.saveLink(key, { url: url, clicks: 0 });
+        return Response.redirect(`${protocol}://${currentDomain}/admin?success=true`, 303);
+      }
     }
 
     return new Response("AI Foundry Active", { status: 200 });
