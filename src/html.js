@@ -499,6 +499,14 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
     }
      async function deleteLink(key) {
       if (!confirm('Delete this link?')) return;
+      
+      // Immediately hide the row for better UX
+      const row = document.querySelector('[data-click-slug="' + key + '"]')?.closest('tr');
+      if (row) {
+        row.style.opacity = '0.5';
+        row.style.pointerEvents = 'none';
+      }
+      
       try {
         const formData = new FormData();
         formData.append('key', key);
@@ -509,13 +517,28 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
         });
         
         if (response.ok) {
-          // KV has delays, so force a complete page reload
+          // KV has delays, so show feedback and reload
           console.log('Link deleted, reloading page...');
-          window.location.reload();
+          showToast('Link deleted successfully!');
+          
+          // Reload after a short delay to let KV start syncing
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
         } else {
+          // Restore row if delete failed
+          if (row) {
+            row.style.opacity = '1';
+            row.style.pointerEvents = 'auto';
+          }
           alert('Error deleting link');
         }
       } catch (error) {
+        // Restore row if error
+        if (row) {
+          row.style.opacity = '1';
+          row.style.pointerEvents = 'auto';
+        }
         alert('Error: ' + error.message);
       }
     }
