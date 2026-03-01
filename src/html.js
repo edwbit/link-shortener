@@ -182,7 +182,56 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
       }
     }
     
-    /* Toast notification styles */
+    /* Progress notification styles */
+    .progress-notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      min-width: 300px;
+      max-width: 400px;
+      transform: translateX(400px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+    
+    .progress-notification.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.1s ease;
+    }
+    
+    .progress-message {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    
+    .progress-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
     .toast {
       position: fixed;
       bottom: 20px;
@@ -475,6 +524,50 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
       showToast('Copied: ' + text);
     }
     
+    function showProgress(message, subtitle, duration = 2000) {
+      // Remove existing progress
+      const existingProgress = document.querySelector('.progress-notification');
+      if (existingProgress) {
+        existingProgress.remove();
+      }
+      
+      // Create progress notification
+      const progress = document.createElement('div');
+      progress.className = 'progress-notification';
+      progress.innerHTML = 
+        '<div class="progress-message">' + message + '</div>' +
+        '<div class="progress-subtitle">' + subtitle + '</div>' +
+        '<div class="progress-bar">' +
+          '<div class="progress-fill" style="width: 0%"></div>' +
+        '</div>';
+      document.body.appendChild(progress);
+      
+      // Show progress
+      setTimeout(() => progress.classList.add('show'), 10);
+      
+      // Animate progress bar
+      const progressFill = progress.querySelector('.progress-fill');
+      const startTime = Date.now();
+      const animateProgress = () => {
+        const elapsed = Date.now() - startTime;
+        const percentage = Math.min((elapsed / duration) * 100, 100);
+        progressFill.style.width = percentage + '%';
+        
+        if (percentage < 100) {
+          requestAnimationFrame(animateProgress);
+        } else {
+          // Hide and remove when complete
+          setTimeout(() => {
+            progress.classList.remove('show');
+            setTimeout(() => progress.remove(), 300);
+          }, 500);
+        }
+      };
+      requestAnimationFrame(animateProgress);
+      
+      return progress;
+    }
+    
     function showToast(message) {
       // Remove existing toast
       const existingToast = document.querySelector('.toast');
@@ -507,6 +600,9 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
         row.style.pointerEvents = 'none';
       }
       
+      // Show progress notification
+      const progress = showProgress('Deleting Link', 'Syncing with Cloudflare KV...', 1500);
+      
       try {
         const formData = new FormData();
         formData.append('key', key);
@@ -519,12 +615,19 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
         if (response.ok) {
           // KV has delays, so show feedback and reload
           console.log('Link deleted, reloading page...');
-          showToast('Link deleted successfully!');
           
-          // Reload after a short delay to let KV start syncing
+          // Update progress message
+          setTimeout(() => {
+            const messageEl = progress.querySelector('.progress-message');
+            const subtitleEl = progress.querySelector('.progress-subtitle');
+            if (messageEl) messageEl.textContent = 'Link Deleted Successfully!';
+            if (subtitleEl) subtitleEl.textContent = 'Refreshing page...';
+          }, 800);
+          
+          // Reload after progress completes
           setTimeout(() => {
             window.location.reload();
-          }, 1000);
+          }, 1500);
         } else {
           // Restore row if delete failed
           if (row) {
