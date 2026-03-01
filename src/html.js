@@ -520,7 +520,7 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
      })();
      
      function copyLink(text) {
-      navigator.clipboard.writeText('${protocol}://' + text);
+      navigator.clipboard.writeText('https://' + text);
       showToast('Copied: ' + text);
     }
     
