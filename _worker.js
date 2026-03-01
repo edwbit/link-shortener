@@ -178,7 +178,56 @@ export default {
         } else {
           url = destination;
         }
-        await storage.incrementClicks(slug);
+        
+        // Detect if it's a bot or crawler
+        const userAgent = request.headers.get('user-agent') || '';
+        const referer = request.headers.get('referer') || '';
+        
+        // Common bot/crawler patterns
+        const botPatterns = [
+          /googlebot/i,
+          /bingbot/i,
+          /slurp/i,
+          /duckduckbot/i,
+          /baiduspider/i,
+          /yandexbot/i,
+          /facebookexternalhit/i,
+          /twitterbot/i,
+          /linkedinbot/i,
+          /telegrambot/i,
+          /whatsapp/i,
+          /crawler/i,
+          /spider/i,
+          /bot/i,
+          /curl/i,
+          /wget/i,
+          /python/i,
+          /java/i,
+          /node/i,
+          /go-http/i,
+          /ruby/i,
+          /php/i
+        ];
+        
+        const isBot = botPatterns.some(pattern => pattern.test(userAgent));
+        
+        // Log all requests for debugging
+        console.log('REQUEST LOG:', {
+          slug: slug,
+          userAgent: userAgent.substring(0, 100),
+          referer: referer.substring(0, 100),
+          isBot: isBot,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Only increment clicks for non-bot traffic
+        if (!isBot) {
+          await storage.incrementClicks(slug);
+          console.log('ORGANIC CLICK:', slug);
+        } else {
+          console.log('BOT CLICK IGNORED:', slug);
+        }
+        
         return Response.redirect(url, 302);
       }
     }
