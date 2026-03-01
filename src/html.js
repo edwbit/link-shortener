@@ -469,19 +469,19 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
          });
          </script>` : ''}
       </div>
+      
+      <!-- Footer - Inside main content, respects sidebar boundaries -->
+      <footer class="border-t border-main py-6 px-4 text-center text-sm text-secondary mt-auto">
+        <div class="flex flex-col md:flex-row items-center justify-center gap-2">
+          <span class="font-medium text-primary">AI Foundry</span>
+          <span class="hidden md:inline">|</span>
+          <span>Powered by Cloudflare</span>
+          <span class="hidden md:inline">|</span>
+          <span>Coding Assistants</span>
+        </div>
+      </footer>
     </main>
   </div>
-
-  <!-- Footer - Sticky to viewport bottom -->
-  <footer class="border-t border-main py-6 px-4 text-center text-sm text-secondary fixed bottom-0 left-0 right-0 bg-[var(--bg-primary)] z-20">
-    <div class="flex flex-col md:flex-row items-center justify-center gap-2">
-      <span class="font-medium text-primary">AI Foundry</span>
-      <span class="hidden md:inline">|</span>
-      <span>Powered by Cloudflare</span>
-      <span class="hidden md:inline">|</span>
-      <span>Coding Assistants</span>
-    </div>
-  </footer>
 
    <script>
      lucide.createIcons();
