@@ -333,13 +333,13 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
         <h3 class="text-sm font-medium mb-3 flex items-center gap-2 text-secondary">
           <i data-lucide="plus-circle" class="w-4 h-4 text-accent"></i> Create New Link
         </h3>
-        <form action="/api/save" method="POST" class="grid grid-cols-1 md:grid-cols-3 gap-4" onsubmit="return validateCreateForm(event)">
+        <form action="/api/save" method="POST" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end" onsubmit="return validateCreateForm(event)">
           <input type="text" name="key" placeholder="Slug (e.g. twitter)" required 
-            class="input-bg border border-main rounded-md px-3 py-1.5 text-sm focus:ring-1 focus:ring-accent outline-none">
+            class="input-bg border border-main rounded-md px-3 py-1.5 text-sm focus:ring-1 focus:ring-accent outline-none md:col-span-3">
           <input type="url" name="url" placeholder="Destination URL" required 
-            class="input-bg border border-main rounded-md px-3 py-1.5 text-sm focus:ring-1 focus:ring-accent outline-none">
-          <button type="submit" class="bg-accent hover:opacity-90 text-[#0B0D10] font-medium py-1.5 px-3 rounded-md transition-all flex items-center justify-center gap-2 text-sm">
-            <i data-lucide="link" class="w-3.5 h-3.5"></i> Create Link
+            class="input-bg border border-main rounded-md px-3 py-1.5 text-sm focus:ring-1 focus:ring-accent outline-none md:col-span-7">
+          <button type="submit" class="bg-accent hover:opacity-90 text-[#0B0D10] font-medium py-1.5 px-3 rounded-md transition-all flex items-center justify-center gap-2 text-sm md:col-span-2">
+            <i data-lucide="link" class="w-3.5 h-3.5"></i> Create
           </button>
         </form>
       </section>
@@ -372,7 +372,7 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
                     </div>
                   </td>
                   <td class="px-3 py-1.5">
-                    <a href="${escapeHtml(k.url)}" target="_blank" title="${escapeHtml(k.url)}" class="text-accent hover:underline">${truncateUrl(k.url, 60)}</a>
+                    <a href="${escapeHtml(k.url)}" target="_blank" title="${escapeHtml(k.url)}" class="text-accent hover:underline">${truncateUrl(k.url, 40)}</a>
                   </td>
                   <td class="px-3 py-1.5 text-center">
                     <span class="inline-flex items-center gap-1 text-secondary" data-click-slug="${k.name}">

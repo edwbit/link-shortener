@@ -66,14 +66,18 @@ export default {
       
       // Optional: Check if URL exists (HEAD request)
       try {
-        const urlCheck = await fetch(target, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
-        if (!urlCheck.ok) {
+        const urlCheck = await fetch(target, { 
+          method: 'HEAD', 
+          signal: AbortSignal.timeout(5000),
+          redirect: 'follow'
+        });
+        if (!urlCheck.ok && urlCheck.status !== 405) { // 405 = method not allowed, but URL exists
           return new Response(`
             <script>
               if (confirm('Warning: This URL appears to be broken or unreachable. Save anyway?')) {
-                window.location.href = '${protocol}://${currentDomain}/admin?save=' + encodeURIComponent('${key}') + '&url=' + encodeURIComponent('${target}');
+                window.location.href = 'https://${currentDomain}/admin?save=' + encodeURIComponent('${key}') + '&url=' + encodeURIComponent('${target}');
               } else {
-                window.location.href = '${protocol}://${currentDomain}/admin';
+                window.location.href = 'https://${currentDomain}/admin';
               }
             </script>
           `, { 
@@ -81,13 +85,14 @@ export default {
           });
         }
       } catch (error) {
-        // URL check failed, but allow save with warning
+        // URL check failed (common with Google Drive, etc.), but allow save with warning
+        console.log('URL validation failed:', error.message);
         return new Response(`
           <script>
-            if (confirm('Could not verify this URL. Save anyway?')) {
-              window.location.href = '${protocol}://${currentDomain}/admin?save=' + encodeURIComponent('${key}') + '&url=' + encodeURIComponent('${target}');
+            if (confirm('Could not verify this URL (this is common with Google Drive, etc.). Save anyway?')) {
+              window.location.href = 'https://${currentDomain}/admin?save=' + encodeURIComponent('${key}') + '&url=' + encodeURIComponent('${target}');
             } else {
-              window.location.href = '${protocol}://${currentDomain}/admin';
+              window.location.href = 'https://${currentDomain}/admin';
             }
           </script>
         `, { 
@@ -101,7 +106,7 @@ export default {
         return new Response(`
           <script>
             alert('Error: Short URL "${key}" already exists! Please choose a different name.');
-            window.location.href = '${protocol}://${currentDomain}/admin';
+            window.location.href = 'https://${currentDomain}/admin';
           </script>
         `, { 
           headers: { "Content-Type": "text/html" }
@@ -109,7 +114,7 @@ export default {
       }
       
       await storage.saveLink(key, { url: target, clicks: 0 });
-      return Response.redirect(`${protocol}://${currentDomain}/admin?success=true`, 303);
+      return Response.redirect(`https://${currentDomain}/admin?success=true`, 303);
     }
 
     // Route 3: API - Update
