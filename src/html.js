@@ -410,11 +410,12 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
             <tbody class="divide-y divide-main">
               ${links.length === 0 ? '<tr><td colspan="5" class="px-6 py-10 text-center text-secondary">No links found yet.</td></tr>' : 
                 links.map((k, i) => `
-                <tr class="bg-hover transition-colors">
-                  <td class="px-3 py-1.5 text-secondary">${i + 1}</td>
+                <tr class="bg-hover transition-colors ${i === 0 ? 'border-l-2 border-l-accent' : ''}">
+                  <td class="px-3 py-1.5 text-secondary">${i === 0 ? '🆕' : i + 1}</td>
                   <td class="px-3 py-1.5">
                     <div class="flex items-center gap-2">
                       <span class="font-medium text-primary">${domain}/<span class="text-accent">${k.name}</span></span>
+                      ${i === 0 ? '<span class="bg-accent text-[#0B0D10] text-xs px-2 py-0.5 rounded-full font-medium">NEW</span>' : ''}
                       <button onclick="copyLink('${domain}/${k.name}')" class="text-secondary hover:text-accent p-0.5">
                         <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                       </button>
