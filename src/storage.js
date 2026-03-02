@@ -2,6 +2,10 @@
 
 // Local in-memory storage for development (fallback when KV not available)
 const localLinks = new Map();
+const localAnalytics = new Map();
+
+// Maximum analytics records per link
+const MAX_ANALYTICS_PER_LINK = 1000;
 
 // Helper to parse link data from various formats
 function parseLinkData(data) {
@@ -48,6 +52,7 @@ function parseLinkData(data) {
 
 export function createStorage(env) {
   const hasKV = env.SHORT_LINKS != null;
+  const hasAnalyticsKV = env.SHORT_LINKS_ANALYTICS != null;
   
   return {
     async getLink(key) {
@@ -195,6 +200,57 @@ export function createStorage(env) {
         cursor: start + limit < filteredLinks.length ? String(start + limit) : null,
         total: filteredLinks.length
       };
+    },
+    
+    // Analytics methods
+    async saveClickAnalytics(key, analytics) {
+      const analyticsKey = `analytics:${key}`;
+      let analyticsList = [];
+      
+      // Get existing analytics
+      if (hasAnalyticsKV) {
+        const existing = await env.SHORT_LINKS_ANALYTICS.get(analyticsKey);
+        if (existing) {
+          try {
+            analyticsList = JSON.parse(existing);
+          } catch {
+            analyticsList = [];
+          }
+        }
+      } else {
+        analyticsList = localAnalytics.get(analyticsKey) || [];
+      }
+      
+      // Add new analytics record
+      analyticsList.push(analytics);
+      
+      // Keep only last MAX_ANALYTICS_PER_LINK records
+      if (analyticsList.length > MAX_ANALYTICS_PER_LINK) {
+        analyticsList = analyticsList.slice(-MAX_ANALYTICS_PER_LINK);
+      }
+      
+      // Save back
+      if (hasAnalyticsKV) {
+        await env.SHORT_LINKS_ANALYTICS.put(analyticsKey, JSON.stringify(analyticsList));
+      } else {
+        localAnalytics.set(analyticsKey, analyticsList);
+      }
+    },
+    
+    async getAnalytics(key) {
+      const analyticsKey = `analytics:${key}`;
+      
+      if (hasAnalyticsKV) {
+        const data = await env.SHORT_LINKS_ANALYTICS.get(analyticsKey);
+        if (!data) return [];
+        try {
+          return JSON.parse(data);
+        } catch {
+          return [];
+        }
+      }
+      
+      return localAnalytics.get(analyticsKey) || [];
     }
   };
 }

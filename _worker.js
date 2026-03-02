@@ -4,7 +4,7 @@
 // - Domain detection via env.DOMAIN or defaults to request host
 
 import { createStorage } from './src/storage.js';
-import { renderAdminHTML } from './src/html.js';
+import { renderAdminHTML, renderAnalyticsHTML } from './src/html.js';
 
 export default {
   async fetch(request, env) {
@@ -34,6 +34,30 @@ export default {
       }
       
       return new Response(renderAdminHTML(currentDomain, result.links, protocol, searchQuery, cursor, result.total, result.cursor), {
+        headers: { 
+          "Content-Type": "text/html",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        }
+      });
+    }
+    
+    // Route 1b: Analytics Dashboard
+    if (path.startsWith("/admin/analytics/")) {
+      const slug = decodeURIComponent(path.split("/")[3]);
+      if (!slug) {
+        return Response.redirect(`https://${currentDomain}/admin`, 302);
+      }
+      
+      const link = await storage.getLink(slug);
+      if (!link) {
+        return new Response("Link not found", { status: 404 });
+      }
+      
+      const analytics = await storage.getAnalytics(slug);
+      
+      return new Response(renderAnalyticsHTML(currentDomain, slug, link.url, analytics, protocol), {
         headers: { 
           "Content-Type": "text/html",
           "Cache-Control": "no-cache, no-store, must-revalidate",
@@ -223,7 +247,18 @@ export default {
         // Only increment clicks for non-bot traffic
         if (!isBot) {
           await storage.incrementClicks(slug);
-          console.log('ORGANIC CLICK:', slug);
+          
+          // Capture analytics data
+          const cf = request.cf || {};
+          const analytics = {
+            country: cf.country || 'Unknown',
+            city: cf.city || 'Unknown',
+            ip: request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || 'Unknown',
+            timestamp: Date.now()
+          };
+          await storage.saveClickAnalytics(slug, analytics);
+          
+          console.log('ORGANIC CLICK:', slug, analytics);
         } else {
           console.log('BOT CLICK IGNORED:', slug);
         }

@@ -421,10 +421,10 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
                     '<a href="' + escapeHtml(k.url) + '" target="_blank" title="' + escapeHtml(k.url) + '" class="text-accent hover:underline">' + truncateUrl(k.url, 40) + '</a>' +
                   '</td>' +
                   '<td class="px-3 py-1.5 text-center">' +
-                    '<span class="inline-flex items-center gap-1 text-secondary" data-click-slug="' + k.name + '">' +
+                    '<a href="/admin/analytics/' + k.name + '" class="inline-flex items-center gap-1 text-secondary hover:text-accent transition-colors" title="View analytics">' +
                       '<i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i>' +
                       '<span class="click-count">' + (k.clicks || 0) + '</span>' +
-                    '</span>' +
+                    '</a>' +
                   '</td>' +
                   '<td class="px-3 py-1.5 text-right">' +
                     '<button onclick="openEditModal(\'' + escapeHtml(k.name) + '\', \'' + escapeHtml(k.url) + '\')" class="text-secondary hover:text-accent hover:bg-secondary p-1 rounded transition-colors mr-1">' +
@@ -844,4 +844,180 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
     });
   </script>
 </body></html>`;
+}
+
+export function renderAnalyticsHTML(domain, slug, url, analytics, protocol) {
+  // Helper to format timestamp
+  const formatTimestamp = (ts) => {
+    if (!ts) return 'N/A';
+    return new Date(ts).toLocaleString();
+  };
+  
+  // Sort analytics by timestamp (newest first)
+  const sortedAnalytics = [...analytics].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics | ${slug} - AI Foundry</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        fontSize: {
+          xs: '0.8125rem',
+          sm: '0.875rem',
+          base: '0.9375rem',
+          lg: '1rem',
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://api.fontshare.com/v2/css?f[]=geist@400,500,600,700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Geist', sans-serif; }
+    .theme-dark { --bg-primary: #151A21; --bg-secondary: #0B0D10; --bg-hover: #1C232B; --border: #273140; --text-primary: #FFFFFF; --text-secondary: #8892B0; --accent: #40E0FF; --shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .theme-light { --bg-primary: #F8FAFC; --bg-secondary: #FFFFFF; --bg-hover: #F1F5F9; --border: #E2E8F0; --text-primary: #1E293B; --text-secondary: #64748B; --accent: #0891B2; --btn-text: #FFFFFF; --card-bg: #F8FAFC; --shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .theme-light button[type="submit"], .theme-light .bg-accent { color: var(--btn-text); }
+    .sidebar-shadow { box-shadow: var(--shadow); }
+    .section-shadow { box-shadow: var(--shadow); }
+    .input-shadow { box-shadow: var(--shadow); }
+    body { background-color: var(--bg-primary); color: var(--text-primary); }
+    .theme-dark { --border-color: #273140; }
+    .theme-dark *, .theme-dark *::before, .theme-dark *::after { border-color: #273140; }
+    .bg-primary { background-color: var(--bg-primary); }
+    .bg-secondary { background-color: var(--bg-secondary); }
+    .bg-hover:hover { background-color: var(--bg-hover); }
+    .border-main { border-color: var(--border); }
+    .text-primary { color: var(--text-primary); }
+    .text-secondary { color: var(--text-secondary); }
+    .text-accent { color: var(--accent); }
+    .bg-accent { background-color: var(--accent); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="flex min-h-screen">
+    <aside class="w-56 h-screen sticky top-0 bg-secondary text-white p-4 flex flex-col sidebar-shadow">
+      <div class="flex items-center gap-2 mb-6">
+        <div class="bg-accent p-1.5 rounded-md"><i data-lucide="zap" class="w-4 h-4 text-[#0B0D10]"></i></div>
+        <h1 class="text-sm font-semibold tracking-tight text-primary">AI Foundry</h1>
+      </div>
+      <nav class="space-y-1">
+        <a href="/admin" class="flex items-center gap-2 text-secondary hover:text-primary px-3 py-2 text-sm rounded-md">
+          <i data-lucide="link" class="w-4 h-4"></i> Links
+        </a>
+      </nav>
+      
+      <div class="mt-auto pt-4 border-t border-main">
+        <button onclick="toggleTheme()" class="flex items-center gap-2 text-secondary hover:text-primary text-sm w-full">
+          <i data-lucide="sun" class="w-4 h-4 theme-icon-dark"></i>
+          <i data-lucide="moon" class="w-4 h-4 theme-icon-light hidden"></i>
+          <span class="theme-label">Toggle Theme</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="flex-1 pt-0 pb-10 px-4 md:px-10 max-w-7xl mx-auto w-full flex flex-col">
+      <header class="flex justify-between items-center mb-6 sticky top-0 bg-[var(--bg-primary)] py-4 px-4 z-10 section-shadow">
+        <div class="flex items-center gap-3">
+          <a href="/admin" class="text-secondary hover:text-primary">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+          </a>
+          <h2 class="text-lg font-semibold text-primary">Analytics: ${slug}</h2>
+        </div>
+      </header>
+
+      <section class="bg-secondary rounded-lg border border-main p-4 mb-6 section-shadow">
+        <h3 class="text-sm font-medium mb-2 text-secondary">Short Link</h3>
+        <div class="flex items-center gap-2 mb-4">
+          <span class="font-medium text-accent">${domain}/${slug}</span>
+          <button onclick="copyLink('${domain}/${slug}')" class="text-secondary hover:text-accent p-0.5">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+        <h3 class="text-sm font-medium mb-2 text-secondary">Destination URL</h3>
+        <a href="${url}" target="_blank" class="text-accent hover:underline text-sm break-all">${url}</a>
+      </section>
+
+      <div class="bg-secondary rounded-xl border border-main overflow-hidden section-shadow">
+        <div class="p-4 border-b border-main">
+          <h3 class="text-sm font-medium text-secondary flex items-center gap-2">
+            <i data-lucide="mouse-pointer-click" class="w-4 h-4 text-accent"></i>
+            Click History (${sortedAnalytics.length} total)
+          </h3>
+        </div>
+        <div class="table-container">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-secondary text-secondary uppercase text-xs font-medium tracking-wider">
+              <tr>
+                <th class="px-3 py-2">#</th>
+                <th class="px-3 py-2">Country</th>
+                <th class="px-3 py-2">City</th>
+                <th class="px-3 py-2">IP Address</th>
+                <th class="px-3 py-2">Timestamp</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-main">
+              ${sortedAnalytics.length === 0 ? '<tr><td colspan="5" class="px-6 py-10 text-center text-secondary">No clicks recorded yet.</td></tr>' : sortedAnalytics.map((a, i) => {
+                return '<tr class="bg-hover transition-colors">' +
+                  '<td class="px-3 py-2 text-secondary">' + (i + 1) + '</td>' +
+                  '<td class="px-3 py-2">' + (a.country || 'Unknown') + '</td>' +
+                  '<td class="px-3 py-2">' + (a.city || 'Unknown') + '</td>' +
+                  '<td class="px-3 py-2 font-mono text-xs">' + (a.ip || 'Unknown') + '</td>' +
+                  '<td class="px-3 py-2 text-sm text-secondary">' + formatTimestamp(a.timestamp) + '</td>' +
+                '</tr>';
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <footer class="border-t border-main py-6 px-4 text-center text-sm text-secondary sticky bottom-0 bg-[var(--bg-primary)] z-10">
+        <div class="flex flex-col md:flex-row items-center justify-center gap-2">
+          <span class="font-medium text-primary">AI Foundry</span>
+          <span class="hidden md:inline">|</span>
+          <span>Powered by Cloudflare</span>
+          <span class="hidden md:inline">|</span>
+          <span>Coding Assistants</span>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    
+    // Theme toggle
+    function toggleTheme() {
+      const body = document.body;
+      const isDark = body.classList.contains('theme-dark');
+      const isLight = body.classList.contains('theme-light');
+      
+      if (isDark) {
+        body.classList.remove('theme-dark');
+        body.classList.add('theme-light');
+        localStorage.setItem('theme', 'light');
+      } else {
+        body.classList.remove('theme-light');
+        body.classList.add('theme-dark');
+        localStorage.setItem('theme', 'dark');
+      }
+      lucide.createIcons();
+    }
+    
+    // Load saved theme
+    (function() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.body.classList.add('theme-' + savedTheme);
+    })();
+    
+    function copyLink(text) {
+      navigator.clipboard.writeText('https://' + text);
+    }
+  </script>
+</body>
+</html>`;
 }

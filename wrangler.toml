@@ -5,3 +5,7 @@ pages_build_output_dir = "."
 [[kv_namespaces]]
 binding = "SHORT_LINKS"
 id = "3772a883d68848af971d37b3d66ded22"
+
+[[kv_namespaces]]
+binding = "SHORT_LINKS_ANALYTICS"
+id = "7b35cb67e2a142f28bfdbec0246778c7"
