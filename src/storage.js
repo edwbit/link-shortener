@@ -100,11 +100,13 @@ export function createStorage(env) {
           result.keys.map(async (k) => {
             const data = await env.SHORT_LINKS.get(k.name);
             const parsed = parseLinkData(data);
+            // Use a very old timestamp for existing links without created date
+            const created = parsed.created || (Date.now() - 365 * 24 * 60 * 60 * 1000); // 1 year ago
             return {
               name: k.name,
               url: parsed.url,
               clicks: parsed.clicks,
-              created: parsed.created || Date.now() // Fallback for existing links
+              created: created
             };
           })
         );
@@ -120,7 +122,10 @@ export function createStorage(env) {
       // Local storage: maintain consistent cursor handling
       const allLinks = Array.from(localLinks.entries()).map(([name, data]) => {
         const parsed = parseLinkData(data);
-        return { name, url: parsed.url, clicks: parsed.clicks, created: parsed.created || Date.now() };
+        // Use a very old timestamp for existing links without created date
+        // This ensures truly new links appear at top
+        const created = parsed.created || (Date.now() - 365 * 24 * 60 * 60 * 1000); // 1 year ago
+        return { name, url: parsed.url, clicks: parsed.clicks, created };
       });
       // Sort by creation time (newest first) for better UX
       allLinks.sort((a, b) => (b.created || 0) - (a.created || 0));
