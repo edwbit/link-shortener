@@ -28,9 +28,9 @@ export default {
       // Use search if query exists, otherwise use paginated list
       let result;
       if (searchQuery) {
-        result = await storage.search(searchQuery, 10, cursor);
+        result = await storage.search(searchQuery, 15, cursor);
       } else {
-        result = await storage.listKeys(10, cursor);
+        result = await storage.listKeys(15, cursor);
       }
       
       return new Response(renderAdminHTML(currentDomain, result.links, protocol, searchQuery, cursor, result.total, result.cursor), {

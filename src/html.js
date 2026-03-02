@@ -17,7 +17,7 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
     return escapeHtml(url.substring(0, maxLen)) + '...';
   };
    // Pagination logic
-   const limit = 10;
+   const limit = 15;
    // For KV, cursors are opaque strings, so we can't calculate exact page numbers
    // For local dev, cursors are numeric offsets
    let currentPage;
