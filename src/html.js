@@ -906,7 +906,7 @@ export function renderAnalyticsHTML(domain, slug, url, analytics, protocol) {
         <h1 class="text-sm font-semibold tracking-tight text-primary">AI Foundry</h1>
       </div>
       <nav class="space-y-1">
-        <a href="/admin" class="flex items-center gap-2 text-secondary hover:text-primary px-3 py-2 text-sm rounded-md">
+        <a href="/admin" class="nav-links-btn flex items-center gap-2 border-l-2 border-accent bg-accent text-white px-3 py-2 text-sm rounded-md">
           <i data-lucide="link" class="w-4 h-4"></i> Links
         </a>
       </nav>
