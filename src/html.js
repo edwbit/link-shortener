@@ -393,8 +393,6 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
         </form>
       </section>
 
-      <div class="mb-4">
-
       <div class="bg-secondary rounded-xl border border-main overflow-hidden section-shadow">
         <div class="table-container">
           <table class="w-full text-left border-collapse">
@@ -408,67 +406,40 @@ export function renderAdminHTML(domain, links, protocol, searchQuery = "", curso
               </tr>
             </thead>
             <tbody class="divide-y divide-main">
-              ${links.length === 0 ? '<tr><td colspan="5" class="px-6 py-10 text-center text-secondary">No links found yet.</td></tr>' : 
-                links.map((k, i) => `
-                <tr class="bg-hover transition-colors ${i === 0 ? 'border-l-2 border-l-accent' : ''}">
-                  <td class="px-3 py-1.5 text-secondary">${i === 0 ? '🆕' : i + 1}</td>
-                  <td class="px-3 py-1.5">
-                    <div class="flex items-center gap-2">
-                      <span class="font-medium text-primary">${domain}/<span class="text-accent">${k.name}</span></span>
-                      ${i === 0 ? '<span class="bg-accent text-[#0B0D10] text-xs px-2 py-0.5 rounded-full font-medium">NEW</span>' : ''}
-                      <button onclick="copyLink('${domain}/${k.name}')" class="text-secondary hover:text-accent p-0.5">
-                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                      </button>
-                    </div>
-                  </td>
-                  <td class="px-3 py-1.5">
-                    <a href="${escapeHtml(k.url)}" target="_blank" title="${escapeHtml(k.url)}" class="text-accent hover:underline">${truncateUrl(k.url, 40)}</a>
-                  </td>
-                  <td class="px-3 py-1.5 text-center">
-                    <span class="inline-flex items-center gap-1 text-secondary" data-click-slug="${k.name}">
-                      <i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i>
-                      <span class="click-count">${k.clicks || 0}</span>
-                    </span>
-                  </td>
-                  <td class="px-3 py-1.5 text-right">
-                    <button onclick="openEditModal('${escapeHtml(k.name)}', '${escapeHtml(k.url)}')" class="text-secondary hover:text-accent hover:bg-secondary p-1 rounded transition-colors mr-1">
-                      <i data-lucide="pencil" class="w-4 h-4"></i>
-                    </button>
-                    <button onclick="deleteLink('${k.name}')" class="text-secondary hover:text-red-400 hover:bg-secondary p-1 rounded transition-colors">
-                      <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                  </td>
-                </tr>`).join('')}
+              ${links.length === 0 ? '<tr><td colspan="5" class="px-6 py-10 text-center text-secondary">No links found yet.</td></tr>' : links.map((k, i) => {
+                return '<tr class="bg-hover transition-colors ' + (i === 0 ? 'border-l-2 border-l-accent' : '') + '">' +
+                  '<td class="px-3 py-1.5 text-secondary">' + (i === 0 ? '&#x1F7E2;' : (i + 1)) + '</td>' +
+                  '<td class="px-3 py-1.5">' +
+                    '<div class="flex items-center gap-2">' +
+                      '<span class="font-medium text-primary">' + domain + '/<span class="text-accent">' + k.name + '</span></span>' +
+                      (i === 0 ? '<span class="bg-accent text-[#0B0D10] text-xs px-2 py-0.5 rounded-full font-medium">NEW</span>' : '') +
+                      '<button onclick="copyLink(\'' + domain + '/' + k.name + '\')" class="text-secondary hover:text-accent p-0.5">' +
+                        '<i data-lucide="copy" class="w-3.5 h-3.5"></i>' +
+                      '</button>' +
+                    '</div>' +
+                  '</td>' +
+                  '<td class="px-3 py-1.5">' +
+                    '<a href="' + escapeHtml(k.url) + '" target="_blank" title="' + escapeHtml(k.url) + '" class="text-accent hover:underline">' + truncateUrl(k.url, 40) + '</a>' +
+                  '</td>' +
+                  '<td class="px-3 py-1.5 text-center">' +
+                    '<span class="inline-flex items-center gap-1 text-secondary" data-click-slug="' + k.name + '">' +
+                      '<i data-lucide="mouse-pointer-click" class="w-3.5 h-3.5"></i>' +
+                      '<span class="click-count">' + (k.clicks || 0) + '</span>' +
+                    '</span>' +
+                  '</td>' +
+                  '<td class="px-3 py-1.5 text-right">' +
+                    '<button onclick="openEditModal(\'' + escapeHtml(k.name) + '\', \'' + escapeHtml(k.url) + '\')" class="text-secondary hover:text-accent hover:bg-secondary p-1 rounded transition-colors mr-1">' +
+                      '<i data-lucide="pencil" class="w-4 h-4"></i>' +
+                    '</button>' +
+                    '<button onclick="deleteLink(\'' + escapeHtml(k.name) + '\')" class="text-secondary hover:text-red-500 hover:bg-secondary p-1 rounded transition-colors">' +
+                      '<i data-lucide="trash-2" class="w-4 h-4"></i>' +
+                    '</button>' +
+                  '</td>' +
+                '</tr>';
+              }).join('')}
             </tbody>
           </table>
         </div>
-        ${links.length > 0 ? `
-         <div class="px-6 py-4 border-t border-main pagination-form flex justify-between items-center flex-wrap gap-2">
-            <!-- Jump to page form -->
-            <form id="jumpToPageForm" class="flex items-center gap-1">
-              <input type="number" id="jumpToPageInput" min="1" max="${totalPages}" placeholder="Page" class="w-16 px-2 py-1.5 input-bg border border-main rounded-md text-sm focus:ring-1 focus:ring-accent outline-none">
-              <button type="submit" class="px-2 py-1.5 bg-accent hover:opacity-90 text-[#0B0D10] rounded-md text-sm font-medium">Go</button>
-            </form>
-            <span class="text-sm">${pageInfo}</span>
-         </div>
-         
-         <script>
-         // Add jump to page functionality
-         document.getElementById('jumpToPageForm').addEventListener('submit', function(e) {
-           e.preventDefault();
-           const pageInput = document.getElementById('jumpToPageInput');
-           const targetPage = parseInt(pageInput.value);
-           
-           if (targetPage >= 1 && targetPage <= ${totalPages}) {
-             const cursor = targetPage === 1 ? '' : '?cursor=' + String((targetPage - 1) * ${limit});
-             const searchQuery = '${searchQuery}';
-             const searchParam = searchQuery ? (cursor ? '&' : '?') + 'q=' + encodeURIComponent(searchQuery) : '';
-             window.location.href = '/admin' + cursor + searchParam;
-           } else {
-             alert('Please enter a valid page number between 1 and ${totalPages}');
-           }
-         });
-         </script>` : ''}
       </div>
       
       <!-- Footer - Sticky to viewport bottom, inside main for width -->
