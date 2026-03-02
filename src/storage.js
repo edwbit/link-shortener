@@ -5,9 +5,9 @@ const localLinks = new Map();
 
 // Helper to parse link data from various formats
 function parseLinkData(data) {
-  // If already an object with url property, return it
+  // If already an object with url property, return it (preserve all fields including created)
   if (data && typeof data === 'object' && data.url) {
-    return { url: data.url, clicks: data.clicks || 0 };
+    return { url: data.url, clicks: data.clicks || 0, created: data.created || null };
   }
   
   // If it's a string, try to parse as JSON
@@ -18,32 +18,32 @@ function parseLinkData(data) {
       
       // If the parsed result is an object with url property, return it
       if (parsed && typeof parsed === 'object' && parsed.url) {
-        return { url: parsed.url, clicks: parsed.clicks || 0 };
+        return { url: parsed.url, clicks: parsed.clicks || 0, created: parsed.created || null };
       } else if (typeof parsed === 'string') {
         // If the parsed result is still a string, it might be a nested JSON string
         // So try parsing again
         try {
           const doubleParsed = JSON.parse(parsed);
           if (doubleParsed && typeof doubleParsed === 'object' && doubleParsed.url) {
-            return { url: doubleParsed.url, clicks: doubleParsed.clicks || 0 };
+            return { url: doubleParsed.url, clicks: doubleParsed.clicks || 0, created: doubleParsed.created || null };
           }
         } catch {
           // Ignore error and continue
         }
         // If double parsing didn't work, return the original string as URL
-        return { url: parsed, clicks: 0 };
+        return { url: parsed, clicks: 0, created: null };
       } else {
         // If it's neither an object with url nor a string, return as URL
-        return { url: data, clicks: 0 };
+        return { url: data, clicks: 0, created: null };
       }
     } catch {
       // JSON parse failed - treat as plain URL string
-      return { url: data, clicks: 0 };
+      return { url: data, clicks: 0, created: null };
     }
   }
   
   // Fallback
-  return { url: String(data || ''), clicks: 0 };
+  return { url: String(data || ''), clicks: 0, created: null };
 }
 
 export function createStorage(env) {
